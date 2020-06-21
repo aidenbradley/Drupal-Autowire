@@ -25,9 +25,9 @@ class AutowireServiceProvider implements ServiceProviderInterface
       }
 
       foreach ($services as $service) {
-        dump($service);
+
         $namespace = $this->getNamespace($module, $service);
-        dump($namespace);
+
         if ($container->hasDefinition($namespace)) {
           continue;
         }
