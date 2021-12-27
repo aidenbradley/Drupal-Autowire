@@ -1,0 +1,8 @@
+name: Drupal Autowire Test Module
+type: module
+description: 'Supports the Drupal Autowire module during testing'
+package: Custom
+version: VERSION
+core: 8.x
+core_version_requirement: ^8 || ^9
+hidden: true
