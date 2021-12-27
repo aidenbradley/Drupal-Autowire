@@ -2,14 +2,11 @@ services:
   autowirable_service:
     class: Drupal\drupal_autowire_services\AutowirableService
 
-  non_autowirable_service:
-    class: Drupal\drupal_autowire_services\NonAutowirableService
-
   autowireable_with_explicit_autowire_false:
     class: Drupal\drupal_autowire_services\AutowireWithExplicitAutowireFalse
     autowire: false
 
   autowireable_with_explicit_dependencies:
-    class: Drupal\drupal_autowire_services\AutowireWithExplicitAutowireFalse
+    class: Drupal\drupal_autowire_services\AutowireWithDependencies
     dependencies:
       - '@entity_type.manager'

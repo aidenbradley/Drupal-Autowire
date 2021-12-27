@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\autowire;
+namespace Drupal\drupal_autowire;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceProviderInterface;
