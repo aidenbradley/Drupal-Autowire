@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\drupal_autowire\Kernel;
 
+use Drupal\drupal_autowire_services\AutowirableClassString;
 use Drupal\KernelTests\KernelTestBase;
 
 class AutowireServiceProviderTest extends KernelTestBase
@@ -34,6 +35,24 @@ class AutowireServiceProviderTest extends KernelTestBase
         ]);
 
         $serviceDefinition = $this->container->getDefinition('autowirable_service');
+
+        $this->assertTrue($serviceDefinition->isAutowired());
+    }
+
+    /** @test */
+    public function autowires_class_strings(): void
+    {
+        $this->markTestSkipped('Need to work on this one still');
+
+        $serviceDefinition = $this->container->getDefinition(AutowirableClassString::class);
+
+        $this->assertFalse($serviceDefinition->isAutowired());
+
+        $this->enableModules([
+            'drupal_autowire',
+        ]);
+
+        $serviceDefinition = $this->container->getDefinition(AutowirableClassString::class);
 
         $this->assertTrue($serviceDefinition->isAutowired());
     }
