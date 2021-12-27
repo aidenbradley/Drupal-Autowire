@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\drupal_autowire\Kernel;
 
-use Drupal\Core\Site\Settings;
 use Drupal\KernelTests\KernelTestBase;
 
 class AutowireServiceProviderTest extends KernelTestBase

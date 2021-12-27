@@ -4,87 +4,81 @@ namespace Drupal\drupal_autowire;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceProviderInterface;
+use Drupal\Core\Serialization\Yaml;
+use Drupal\Core\Site\Settings;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
-class AutowireServiceProvider implements ServiceProviderInterface
+class DrupalAutowireServiceProvider implements ServiceProviderInterface
 {
+    public function register(ContainerBuilder $container): void
+    {
+        foreach ($this->autowirableDirectories() as $directory) {
+            foreach ($this->modulesInDirectory($directory) as $module) {
 
-  private $serviceFinder = null;
+                $moduleName = $module->getBasename();
 
-  public function register(ContainerBuilder $container): void
-  {
-    foreach ($this->modules() as $module) {
+                try {
+                    $modulePath = drupal_get_path('module', $moduleName) . '/' . $moduleName . '.services.yml';
+                } catch (\Throwable $throwable) {
+                    continue;
+                }
 
-      $services = $this->servicesFor($module);
+                try {
+                    $serviceFile = Yaml::decode(file_get_contents($modulePath));
+                } catch (\Throwable $throwable) {
+                    continue;
+                }
 
-      if($services === null) {
-        continue;
-      }
+                if (isset($serviceFile['services']) === false) {
+                    continue;
+                }
 
-      foreach ($services as $service) {
+                foreach ($serviceFile['services'] as $serviceName => $serviceInfo) {
+                    if (isset($serviceInfo['class']) === false) {
+                        continue;
+                    }
 
-        $namespace = $this->getNamespace($module, $service);
+                    if (isset($serviceInfo['dependencies'])) {
+                        continue;
+                    }
 
-        if ($container->hasDefinition($namespace)) {
-          continue;
+                    if (isset($serviceInfo['autowire']) && $serviceInfo['autowire'] === false) {
+                        continue;
+                    }
+
+                    if ($container->hasDefinition($serviceName) === false) {
+                        continue;
+                    }
+
+                    $definition = new Definition($serviceName);
+
+                    $definition->setAutowired(true);
+
+                    $container->setDefinition($serviceName, $definition);
+                }
+            }
+        }
+    }
+
+    private function modulesInDirectory(string $directory): Finder
+    {
+        return Finder::create()->directories()->depth(0)->in($directory);
+    }
+
+    /** Return an array so multiple directories can be targeted */
+    private function autowirableDirectories(): array
+    {
+        $autowirableDirectories = Settings::get('autowirable_directories');
+
+        if ($autowirableDirectories !== null) {
+            return (array)$autowirableDirectories;
         }
 
-        $definition = new Definition($namespace);
-
-        $definition->setAutowired(true);
-
-        $container->setDefinition($namespace, $definition);
-      }
-
+        return [
+            DRUPAL_ROOT . '/modules/custom'
+        ];
     }
-
-  }
-
-  private function modules(): Finder
-  {
-    return (new Finder())->directories()
-      ->depth(0)
-      ->in(DRUPAL_ROOT . '/modules/custom');
-  }
-
-  private function servicesFor(SplFileInfo $module): ?Finder
-  {
-    try {
-      return $this->serviceFinder()->files()
-        ->in($module->getRealPath() . '/src/Services')
-        ->name('*.php');
-    } catch (DirectoryNotFoundException $exception) {
-      return null;
-    }
-
-  }
-
-  private function getNamespace(SplFileInfo $module, SplFileInfo $service): string
-  {
-    $partialNamespace = strstr($service->getRealPath(), 'src/');
-    $removeSrcDir = str_replace('src/', '', $partialNamespace);
-
-    $removeFileExtension = substr($removeSrcDir, 0, -4);
-    $namespace = str_replace('/', '\\', $removeFileExtension);
-
-    return 'Drupal\\' . $module->getFilename() . '\\' . $namespace;
-  }
-
-  public function serviceFinder(): Finder
-  {
-    if(isset($this->servicesFinder)) {
-      return $this->servicesFinder;
-    }
-
-    $serviceFinder = new Finder();
-    $serviceFinder->name('*.php')->files();
-
-    $this->serviceFinder = $serviceFinder;
-
-    return $this->serviceFinder;
-  }
-
 }
